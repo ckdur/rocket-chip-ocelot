@@ -92,8 +92,9 @@ trait HasNonDiplomaticTileParameters {
   def masterPortBeatBytes = p(SystemBusKey).beatBytes
 
   // TODO make HellaCacheIO diplomatic and remove this brittle collection of hacks
+  // TODO: (CKDUR) Restore the useVector when building the vector as a non ROCC. This makes boom constructions to fail
   //                  Core   PTW                DTIM                    coprocessors           
-  def dcacheArbPorts = 1 + usingVM.toInt + usingDataScratchpad.toInt + p(BuildRoCC).size + tileParams.core.useVector.toInt
+  def dcacheArbPorts = 1 + usingVM.toInt + usingDataScratchpad.toInt + p(BuildRoCC).size// + tileParams.core.useVector.toInt
 
   // TODO merge with isaString in CSR.scala
   def isaDTS: String = {

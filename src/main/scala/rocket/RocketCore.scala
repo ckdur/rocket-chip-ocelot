@@ -29,6 +29,7 @@ case class RocketCoreParams(
   useBitManipCrypto: Boolean = false,
   useCryptoNIST: Boolean = false,
   useCryptoSM: Boolean = false,
+  enableVector: Boolean = false,
   nLocalInterrupts: Int = 0,
   useNMI: Boolean = false,
   nBreakpoints: Int = 1,
@@ -67,6 +68,9 @@ case class RocketCoreParams(
   override val customIsaExt = Some("Xrocket") // CEASE instruction
   override def minFLen: Int = fpu.map(_.minFLen).getOrElse(32)
   override def customCSRs(implicit p: Parameters) = new RocketCustomCSRs
+  override def vLen = 128
+  override def vMemDataBits = 64 // TODO: It seems we need to increase the cacheBits, but this depends of what is the TL interface
+  override val useVector: Boolean = enableVector
 }
 
 trait HasRocketCoreParameters extends HasCoreParameters {
@@ -186,6 +190,7 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
     (if (fLen >= 64)    new DDecode(aluFn) +: (xLen > 32).option(new D64Decode(aluFn)).toSeq else Nil) ++:
     (if (minFLen == 16) new HDecode(aluFn) +: (xLen > 32).option(new H64Decode(aluFn)).toSeq ++: (fLen >= 64).option(new HDDecode(aluFn)).toSeq else Nil) ++:
     (usingRoCC.option(new RoCCDecode(aluFn))) ++:
+    (usingRoCC.option(new VectorDecode(aluFn))) ++:
     (rocketParams.useSCIE.option(new SCIEDecode(aluFn))) ++:
     (if (usingBitManip) new ZBADecode +: (xLen == 64).option(new ZBA64Decode).toSeq ++: new ZBBMDecode +: new ZBBORCBDecode +: new ZBCRDecode +: new ZBSDecode +: (xLen == 32).option(new ZBS32Decode).toSeq ++: (xLen == 64).option(new ZBS64Decode).toSeq ++: new ZBBSEDecode +: new ZBBCDecode +: (xLen == 64).option(new ZBBC64Decode).toSeq else Nil) ++:
     (if (usingBitManip && !usingBitManipCrypto) (xLen == 32).option(new ZBBZE32Decode).toSeq ++: (xLen == 64).option(new ZBBZE64Decode).toSeq else Nil) ++:
@@ -311,6 +316,9 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
   val id_csr_ren = id_ctrl.csr.isOneOf(CSR.S, CSR.C) && id_expanded_inst(0).rs1 === 0.U
   val id_csr = Mux(id_system_insn && id_ctrl.mem, CSR.N, Mux(id_csr_ren, CSR.R, id_ctrl.csr))
   val id_csr_flush = id_system_insn || (id_csr_en && !id_csr_ren && csr.io.decode(0).write_flush)
+
+  // TODO: Connect this to the Vector when is actually inside
+  csr.io.vector.foreach(_ := DontCare)
 
   val id_scie_decoder = if (!rocketParams.useSCIE) WireDefault(0.U.asTypeOf(new SCIEDecoderInterface)) else {
     val d = Module(new SCIEDecoder)
