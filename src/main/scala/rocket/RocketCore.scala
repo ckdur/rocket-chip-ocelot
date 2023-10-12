@@ -317,8 +317,10 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
   val id_csr = Mux(id_system_insn && id_ctrl.mem, CSR.N, Mux(id_csr_ren, CSR.R, id_ctrl.csr))
   val id_csr_flush = id_system_insn || (id_csr_en && !id_csr_ren && csr.io.decode(0).write_flush)
 
-  // TODO: Connect this to the Vector when is actually inside
-  csr.io.vector.foreach(_ := DontCare)
+  // Vector Connection from ROCC
+  (io.rocc.vector zip csr.io.vector).foreach { case (roccvec, csrvec) =>
+    roccvec <> csrvec
+  }
 
   val id_scie_decoder = if (!rocketParams.useSCIE) WireDefault(0.U.asTypeOf(new SCIEDecoderInterface)) else {
     val d = Module(new SCIEDecoder)

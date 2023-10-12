@@ -11,7 +11,7 @@ import org.chipsalliance.cde.config._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.rocket._
 import freechips.rocketchip.tilelink._
-import freechips.rocketchip.util.InOrderArbiter
+import freechips.rocketchip.util._
 
 case object BuildRoCC extends Field[Seq[Parameters => LazyRoCC]](Nil)
 
@@ -45,6 +45,7 @@ class RoCCCoreIO(implicit p: Parameters) extends CoreBundle()(p) {
   val busy = Output(Bool())
   val interrupt = Output(Bool())
   val exception = Input(Bool())
+  val vector = usingVector.option(Flipped(new CSRVectorIO))
 }
 
 class RoCCIO(val nPTWPorts: Int)(implicit p: Parameters) extends RoCCCoreIO()(p) {

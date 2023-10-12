@@ -239,6 +239,17 @@ class CSRDecodeIO(implicit p: Parameters) extends CoreBundle {
   val virtual_system_illegal = Output(Bool())
 }
 
+class CSRVectorIO(implicit p: Parameters) extends CoreBundle {
+  val vconfig = Output(new VConfig())
+  val vstart = Output(UInt(maxVLMax.log2.W))
+  val vxrm = Output(UInt(2.W))
+  val set_vs_dirty = Input(Bool())
+  val set_vtype = Flipped(Valid(new VType))
+  val set_vl = Flipped(Valid(UInt((maxVLMax.log2 + 1).W)))
+  val set_vstart = Flipped(Valid(vstart))
+  val set_vxsat = Input(Bool())
+}
+
 class CSRFileIO(implicit p: Parameters) extends CoreBundle
     with HasCoreParameters {
   val ungated_clock = Input(Clock())
@@ -288,16 +299,7 @@ class CSRFileIO(implicit p: Parameters) extends CoreBundle
   val mcontext = Output(UInt(coreParams.mcontextWidth.W))
   val scontext = Output(UInt(coreParams.scontextWidth.W))
 
-  val vector = usingVector.option(new Bundle {
-    val vconfig = Output(new VConfig())
-    val vstart = Output(UInt(maxVLMax.log2.W))
-    val vxrm = Output(UInt(2.W))
-    val set_vs_dirty = Input(Bool())
-    val set_vtype = Flipped(Valid(new VType))
-    val set_vl = Flipped(Valid(UInt((maxVLMax.log2 + 1).W)))
-    val set_vstart = Flipped(Valid(vstart))
-    val set_vxsat = Input(Bool())
-  })
+  val vector = usingVector.option(new CSRVectorIO)
 }
 
 class VConfig(implicit p: Parameters) extends CoreBundle {
